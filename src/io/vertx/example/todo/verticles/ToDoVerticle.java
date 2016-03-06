@@ -1,5 +1,6 @@
 package io.vertx.example.todo.verticles;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -13,7 +14,6 @@ import io.vertx.example.todo.service.exception.IllegalFieldException;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.CorsHandler;
-import shaded.org.apache.http.HttpStatus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,23 +71,22 @@ public class ToDoVerticle extends AbstractVerticle {
     private void createToDo(RoutingContext context) {
         HttpServerRequest req = context.request();
         HttpServerResponse response = context.response();
-
         req.bodyHandler(buffer -> {
             ToDoItem item = Json.decodeValue(buffer.getString(0, buffer.length()), ToDoItem.class);
             if (item != null) {
                 item.setUrl(context.request().absoluteURI());
                 String responseJson = Json.encode(toDoService.add(item));
-                response.setStatusCode(HttpStatus.SC_CREATED)
+                response.setStatusCode(HttpResponseStatus.CREATED.code())
                         .end(responseJson);
                 return;
             }
-            response.setStatusCode(HttpStatus.SC_UNPROCESSABLE_ENTITY)
+            response.setStatusCode(HttpResponseStatus.UNPROCESSABLE_ENTITY.code())
                     .end();
         });
     }
 
     private void getToDos(RoutingContext context) {
-        context.response().setStatusCode(HttpStatus.SC_OK)
+        context.response().setStatusCode(HttpResponseStatus.OK.code())
                 .end(Json.encode(toDoService.getAll()));
     }
 
@@ -97,17 +96,17 @@ public class ToDoVerticle extends AbstractVerticle {
         Predicate<ToDoItem> condition = item -> item.getUrl().equals(toDoUrl);
         ToDoItem toDoItem = toDoService.getToDoItem(condition);
         if (toDoItem != null) {
-            response.setStatusCode(HttpStatus.SC_OK)
+            response.setStatusCode(HttpResponseStatus.OK.code())
                     .end(Json.encode(toDoItem));
         } else {
-            response.setStatusCode(HttpStatus.SC_NOT_FOUND)
+            response.setStatusCode(HttpResponseStatus.NOT_FOUND.code())
                     .end();
         }
     }
 
     private void clearToDo(RoutingContext context) {
         toDoService.clearToDos();
-        context.response().setStatusCode(HttpStatus.SC_NO_CONTENT)
+        context.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code())
                 .end(Json.encode(new ArrayList<>()));
     }
 
@@ -116,9 +115,9 @@ public class ToDoVerticle extends AbstractVerticle {
         HttpServerResponse response = context.response();
         Predicate<ToDoItem> condition = toDoItem -> toDoItem.getUrl().equals(toDoUrl);
         if (toDoService.remove(condition)) {
-            response.setStatusCode(HttpStatus.SC_NO_CONTENT);
+            response.setStatusCode(HttpResponseStatus.NO_CONTENT.code());
         } else {
-            response.setStatusCode(HttpStatus.SC_NOT_FOUND);
+            response.setStatusCode(HttpResponseStatus.NOT_FOUND.code());
         }
         context.response().end(Json.encode(new ArrayList<>()));
     }
@@ -135,12 +134,12 @@ public class ToDoVerticle extends AbstractVerticle {
                     String toDoItemSerialized = Json.encode(toDoItem);
                     response.putHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(toDoItemSerialized.length()))
                             .write(toDoItemSerialized)
-                            .setStatusCode(HttpStatus.SC_OK);
+                            .setStatusCode(HttpResponseStatus.OK.code());
                 } else {
-                    response.setStatusCode(HttpStatus.SC_NOT_FOUND);
+                    response.setStatusCode(HttpResponseStatus.NOT_FOUND.code());
                 }
             } catch (IllegalFieldException e) {
-                response.setStatusCode(HttpStatus.SC_UNPROCESSABLE_ENTITY);
+                response.setStatusCode(HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
 
             } finally {
                 response.end();
