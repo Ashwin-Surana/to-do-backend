@@ -63,6 +63,7 @@ public class ToDoVerticle extends AbstractVerticle {
     }
 
     private void startServer() {
+        System.out.println("SERVER DEPLOYED");
         /**
          *  The following coe creates an HttpServer which listens to a port
          *  as set in the system property
