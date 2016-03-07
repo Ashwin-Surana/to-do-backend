@@ -22,20 +22,28 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class ToDoVerticle extends AbstractVerticle {
+    /**
+     * The following are the routes for the REST endpoints.
+     * For each route, you can define a HTTP Method (GET,POST,DELETE, ....) and a
+     * handler to process the incoming requests
+     */
     private final String TODO_URL = "/todo";
+
+    /**
+     * In the below route :id is a path parameter.
+     */
     private final String TODO_ID_URL = "/todo/:id";
+
     ToDoService toDoService;
     private Router router;
 
-    public ToDoVerticle() {
-        router = Router.router(vertx);
-        toDoService = new ToDoService();
-    }
-
     @Override
     public void start() throws Exception {
+        init();
 
-        setupCORS();
+        /**
+         *  HttpMethod is defined for  route and a handler is assigned
+         */
 
         router.get(TODO_URL).handler(this::getToDos);
         router.delete(TODO_URL).handler(this::clearToDo);
@@ -48,9 +56,28 @@ public class ToDoVerticle extends AbstractVerticle {
         startServer();
     }
 
-    private void startServer() {
-        vertx.createHttpServer().requestHandler(router::accept).listen(8080);
+    private void init() {
+        router = Router.router(vertx);
+        toDoService = new ToDoService();
+        setupCORS();
     }
+
+    private void startServer() {
+        /**
+         *  The following coe creates an HttpServer which listens to a port
+         *  as set in the system property
+         */
+        vertx.createHttpServer()
+                .requestHandler(router::accept)
+                .listen(Integer.getInteger("http.port"), System.getProperty("http.address", "0.0.0.0"));
+    }
+
+    /**
+     * For understanding on CORS, you may find the below resources helpful
+     * 1. http://enable-cors.org/
+     * 2. http://www.html5rocks.com/en/tutorials/cors/
+     * 3. https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
+     */
 
     private void setupCORS() {
         Set<HttpMethod> toDoUrlMethodSet = new HashSet<>(Arrays.asList(HttpMethod.GET,
@@ -68,14 +95,31 @@ public class ToDoVerticle extends AbstractVerticle {
                 .allowedHeader("Content-Type"));
     }
 
+    /**
+     * createToDo's implementation is invoked when the application receives a Http post
+     * on the relative route "/todo"
+     */
     private void createToDo(RoutingContext context) {
         HttpServerRequest req = context.request();
         HttpServerResponse response = context.response();
+
+        /**
+         * Body handler to read the request body.
+         */
         req.bodyHandler(buffer -> {
+            /**
+             *  Json.decodeValue converts a Json String to an Object of the class passed
+             *  to it as parameter.
+             */
             ToDoItem item = Json.decodeValue(buffer.getString(0, buffer.length()), ToDoItem.class);
             if (item != null) {
                 item.setUrl(context.request().absoluteURI());
                 String responseJson = Json.encode(toDoService.add(item));
+                /**
+                 * After processing the request, send the response with appropriate HTTP Status.
+                 * Since the creation was successful, we set the status code to CREATED and send
+                 * the json string for the item created.
+                 */
                 response.setStatusCode(HttpResponseStatus.CREATED.code())
                         .end(responseJson);
                 return;

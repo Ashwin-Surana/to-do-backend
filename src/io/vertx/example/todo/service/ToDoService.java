@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+/**
+ * This service maintains a list of todos and provides CRUD (Create, Read, Update, Delete) operations.
+ * This example holds the to-do list in memory for the simplicity of this example.
+ */
 public class ToDoService {
 
     public final static String ORDER = "order";

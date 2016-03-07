@@ -1,5 +1,8 @@
 package io.vertx.example.todo.domain;
 
+/**
+ * POJO class to store to-do item information
+ */
 public class ToDoItem {
     private String title;
     private boolean completed;
