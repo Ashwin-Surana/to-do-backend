@@ -10,7 +10,6 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.example.todo.domain.ToDoItem;
 import io.vertx.example.todo.service.ToDoService;
-import io.vertx.example.todo.service.exception.IllegalFieldException;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.CorsHandler;
@@ -22,14 +21,14 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class ToDoVerticle extends AbstractVerticle {
-    /**
+    /*
      * The following are the routes for the REST endpoints.
      * For each route, you can define a HTTP Method (GET,POST,DELETE, ....) and a
      * handler to process the incoming requests
      */
     private final String TODO_URL = "/todo";
 
-    /**
+    /*
      * In the below route :id is a path parameter.
      */
     private final String TODO_ID_URL = "/todo/:id";
@@ -40,19 +39,7 @@ public class ToDoVerticle extends AbstractVerticle {
     @Override
     public void start() throws Exception {
         init();
-
-        /**
-         *  HttpMethod is defined for  route and a handler is assigned
-         */
-
-        router.get(TODO_URL).handler(this::getToDos);
-        router.delete(TODO_URL).handler(this::clearToDo);
-        router.post(TODO_URL).handler(this::createToDo);
-
-        router.get(TODO_ID_URL).handler(this::getToDoWithId);
-        router.delete(TODO_ID_URL).handler(this::deleteToDoWithId);
-        router.patch(TODO_ID_URL).handler(this::updateToDoWithId);
-
+        setRoutes();
         startServer();
     }
 
@@ -62,10 +49,23 @@ public class ToDoVerticle extends AbstractVerticle {
         setupCORS();
     }
 
+    private void setRoutes() {
+        /*
+         *  HttpMethod is defined for route and a handler is assigned
+         */
+
+        router.get(TODO_URL).handler(this::getToDos);
+        router.delete(TODO_URL).handler(this::clearToDo);
+        router.post(TODO_URL).handler(this::createToDo);
+
+        router.get(TODO_ID_URL).handler(this::getToDoWithId);
+        router.delete(TODO_ID_URL).handler(this::deleteToDoWithId);
+        router.patch(TODO_ID_URL).handler(this::updateToDoWithId);
+    }
+
     private void startServer() {
-        System.out.println("SERVER DEPLOYED");
-        /**
-         *  The following coe creates an HttpServer which listens to a port
+        /*
+         *  The following code creates an HttpServer which listens to a port
          *  as set in the system property
          */
         vertx.createHttpServer()
@@ -73,7 +73,7 @@ public class ToDoVerticle extends AbstractVerticle {
                 .listen(Integer.getInteger("http.port"), System.getProperty("http.address", "0.0.0.0"));
     }
 
-    /**
+    /*
      * For understanding on CORS, you may find the below resources helpful
      * 1. http://enable-cors.org/
      * 2. http://www.html5rocks.com/en/tutorials/cors/
@@ -96,7 +96,7 @@ public class ToDoVerticle extends AbstractVerticle {
                 .allowedHeader("Content-Type"));
     }
 
-    /**
+    /*
      * createToDo's implementation is invoked when the application receives a Http post
      * on the relative route "/todo"
      */
@@ -104,11 +104,11 @@ public class ToDoVerticle extends AbstractVerticle {
         HttpServerRequest req = context.request();
         HttpServerResponse response = context.response();
 
-        /**
+        /*
          * Body handler to read the request body.
          */
         req.bodyHandler(buffer -> {
-            /**
+            /*
              *  Json.decodeValue converts a Json String to an Object of the class passed
              *  to it as parameter.
              */
@@ -116,7 +116,7 @@ public class ToDoVerticle extends AbstractVerticle {
             if (item != null) {
                 item.setUrl(context.request().absoluteURI());
                 String responseJson = Json.encode(toDoService.add(item));
-                /**
+                /*
                  * After processing the request, send the response with appropriate HTTP Status.
                  * Since the creation was successful, we set the status code to CREATED and send
                  * the json string for the item created.
@@ -130,11 +130,17 @@ public class ToDoVerticle extends AbstractVerticle {
         });
     }
 
+    /*
+     * Echos JsonArray of todolist items
+     */
     private void getToDos(RoutingContext context) {
         context.response().setStatusCode(HttpResponseStatus.OK.code())
                 .end(Json.encode(toDoService.getAll()));
     }
 
+    /*
+     * Echos JsonObject of the todo item
+     */
     private void getToDoWithId(RoutingContext context) {
         HttpServerResponse response = context.response();
         String toDoUrl = context.request().absoluteURI();
@@ -149,12 +155,18 @@ public class ToDoVerticle extends AbstractVerticle {
         }
     }
 
+    /*
+     * Clears the todo list
+     */
     private void clearToDo(RoutingContext context) {
         toDoService.clearToDos();
         context.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code())
                 .end(Json.encode(new ArrayList<>()));
     }
 
+    /*
+     * Deletes todo for the requested url
+     */
     private void deleteToDoWithId(RoutingContext context) {
         String toDoUrl = context.request().absoluteURI();
         HttpServerResponse response = context.response();
@@ -167,6 +179,9 @@ public class ToDoVerticle extends AbstractVerticle {
         context.response().end(Json.encode(new ArrayList<>()));
     }
 
+    /*
+     * Updates to do for the requested url
+     */
     private void updateToDoWithId(RoutingContext context) {
         HttpServerRequest req = context.request();
         req.bodyHandler(buffer -> {
@@ -183,7 +198,7 @@ public class ToDoVerticle extends AbstractVerticle {
                 } else {
                     response.setStatusCode(HttpResponseStatus.NOT_FOUND.code());
                 }
-            } catch (IllegalFieldException e) {
+            } catch (Exception e) {
                 response.setStatusCode(HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
 
             } finally {

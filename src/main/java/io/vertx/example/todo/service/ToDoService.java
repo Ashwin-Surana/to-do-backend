@@ -1,7 +1,6 @@
 package io.vertx.example.todo.service;
 
 import io.vertx.example.todo.domain.ToDoItem;
-import io.vertx.example.todo.service.exception.IllegalFieldException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +40,7 @@ public class ToDoService {
         return toDoItemList.removeIf(condition);
     }
 
-    public ToDoItem update(final String itemUrl, final Map<String, Object> updates) throws IllegalFieldException {
+    public ToDoItem update(final String itemUrl, final Map<String, Object> updates) throws Exception {
         ToDoItem item = getToDoItem(testItem -> testItem.getUrl().equals(itemUrl));
         if (item == null)
             return null;
@@ -57,7 +56,7 @@ public class ToDoService {
                     item.setCompleted((Boolean) update.getValue());
                     break;
                 default:
-                    throw new IllegalFieldException(update.getKey());
+                    throw new Exception(update.getKey());
             }
         }
         return item;
