@@ -40,7 +40,7 @@ public class ToDoService {
         return toDoItemList.removeIf(condition);
     }
 
-    public ToDoItem update(final String itemUrl, final Map<String, Object> updates) throws Exception {
+    public ToDoItem update(final String itemUrl, final Map<String, Object> updates) {
         ToDoItem item = getToDoItem(testItem -> testItem.getUrl().equals(itemUrl));
         if (item == null)
             return null;
@@ -55,8 +55,6 @@ public class ToDoService {
                 case COMPLETED:
                     item.setCompleted((Boolean) update.getValue());
                     break;
-                default:
-                    throw new Exception(update.getKey());
             }
         }
         return item;

@@ -2,7 +2,6 @@ package io.vertx.example.todo.verticles;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -101,32 +100,27 @@ public class ToDoVerticle extends AbstractVerticle {
      * on the relative route "/todo"
      */
     private void createToDo(RoutingContext context) {
-        HttpServerRequest req = context.request();
-        HttpServerResponse response = context.response();
+
 
         /*
          * Body handler to read the request body.
          */
-        req.bodyHandler(buffer -> {
+        context.request().bodyHandler(buffer -> {
             /*
              *  Json.decodeValue converts a Json String to an Object of the class passed
              *  to it as parameter.
              */
             ToDoItem item = Json.decodeValue(buffer.getString(0, buffer.length()), ToDoItem.class);
-            if (item != null) {
-                item.setUrl(context.request().absoluteURI());
-                String responseJson = Json.encode(toDoService.add(item));
-                /*
-                 * After processing the request, send the response with appropriate HTTP Status.
-                 * Since the creation was successful, we set the status code to CREATED and send
-                 * the json string for the item created.
-                 */
-                response.setStatusCode(HttpResponseStatus.CREATED.code())
-                        .end(responseJson);
-                return;
-            }
-            response.setStatusCode(HttpResponseStatus.UNPROCESSABLE_ENTITY.code())
-                    .end();
+            item.setUrl(context.request().absoluteURI());
+             /*
+              * After processing the request, send the response with appropriate HTTP Status.
+              * Since the creation was successful, we set the status code to CREATED and send
+              * the json string for the item created.
+              */
+            context.response().setStatusCode(HttpResponseStatus.CREATED.code())
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encode(toDoService.add(item)));
+
         });
     }
 
@@ -135,11 +129,12 @@ public class ToDoVerticle extends AbstractVerticle {
      */
     private void getToDos(RoutingContext context) {
         context.response().setStatusCode(HttpResponseStatus.OK.code())
+                .putHeader("content-type", "application/json; charset=utf-8")
                 .end(Json.encode(toDoService.getAll()));
     }
 
     /*
-     * Echos JsonObject of the todo item
+     * Echos Json of the todo item
      */
     private void getToDoWithId(RoutingContext context) {
         HttpServerResponse response = context.response();
@@ -148,6 +143,7 @@ public class ToDoVerticle extends AbstractVerticle {
         ToDoItem toDoItem = toDoService.getToDoItem(condition);
         if (toDoItem != null) {
             response.setStatusCode(HttpResponseStatus.OK.code())
+                    .putHeader("content-type", "application/json; charset=utf-8")
                     .end(Json.encode(toDoItem));
         } else {
             response.setStatusCode(HttpResponseStatus.NOT_FOUND.code())
@@ -161,6 +157,7 @@ public class ToDoVerticle extends AbstractVerticle {
     private void clearToDo(RoutingContext context) {
         toDoService.clearToDos();
         context.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code())
+                .putHeader("content-type", "application/json; charset=utf-8")
                 .end(Json.encode(new ArrayList<>()));
     }
 
@@ -169,14 +166,16 @@ public class ToDoVerticle extends AbstractVerticle {
      */
     private void deleteToDoWithId(RoutingContext context) {
         String toDoUrl = context.request().absoluteURI();
-        HttpServerResponse response = context.response();
         Predicate<ToDoItem> condition = toDoItem -> toDoItem.getUrl().equals(toDoUrl);
         if (toDoService.remove(condition)) {
-            response.setStatusCode(HttpResponseStatus.NO_CONTENT.code());
+            context.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code())
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .end(Json.encode(new ArrayList<>()));
         } else {
-            response.setStatusCode(HttpResponseStatus.NOT_FOUND.code());
+            context.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code())
+                    .end();
         }
-        context.response().end(Json.encode(new ArrayList<>()));
+
     }
 
     /*
@@ -185,27 +184,19 @@ public class ToDoVerticle extends AbstractVerticle {
     private void updateToDoWithId(RoutingContext context) {
         HttpServerRequest req = context.request();
         req.bodyHandler(buffer -> {
-            HttpServerResponse response = context.response();
             String toDoItemUrl = req.absoluteURI();
             JsonObject jsonObject = new JsonObject(buffer.getString(0, buffer.length()));
-            try {
-                ToDoItem toDoItem = toDoService.update(toDoItemUrl, jsonObject.getMap());
-                if (toDoItem != null) {
-                    String toDoItemSerialized = Json.encode(toDoItem);
-                    response.putHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(toDoItemSerialized.length()))
-                            .write(toDoItemSerialized)
-                            .setStatusCode(HttpResponseStatus.OK.code());
-                } else {
-                    response.setStatusCode(HttpResponseStatus.NOT_FOUND.code());
-                }
-            } catch (Exception e) {
-                response.setStatusCode(HttpResponseStatus.UNPROCESSABLE_ENTITY.code());
-
-            } finally {
-                response.end();
+            ToDoItem toDoItem = toDoService.update(toDoItemUrl, jsonObject.getMap());
+            if (toDoItem != null) {
+                context.response()
+                        .setStatusCode(HttpResponseStatus.OK.code())
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end(Json.encode(toDoItem));
+            } else {
+                context.response()
+                        .setStatusCode(HttpResponseStatus.NOT_FOUND.code())
+                        .end();
             }
-
         });
     }
-
 }
