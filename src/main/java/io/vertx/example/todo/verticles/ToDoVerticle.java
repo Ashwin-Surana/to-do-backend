@@ -53,13 +53,13 @@ public class ToDoVerticle extends AbstractVerticle {
          *  HttpMethod is defined for route and a handler is assigned
          */
 
-        router.get(TODO_URL).handler(this::getToDos);
-        router.delete(TODO_URL).handler(this::clearToDo);
+        router.get(TODO_URL).handler(this::getAllToDo);
+        router.delete(TODO_URL).handler(this::deleteAllToDo);
         router.post(TODO_URL).handler(this::createToDo);
 
-        router.get(TODO_ID_URL).handler(this::getToDoWithId);
-        router.delete(TODO_ID_URL).handler(this::deleteToDoWithId);
-        router.patch(TODO_ID_URL).handler(this::updateToDoWithId);
+        router.get(TODO_ID_URL).handler(this::getToDo);
+        router.delete(TODO_ID_URL).handler(this::deleteToDo);
+        router.patch(TODO_ID_URL).handler(this::updateToDo);
     }
 
     private void startServer() {
@@ -127,7 +127,7 @@ public class ToDoVerticle extends AbstractVerticle {
     /*
      * Echos JsonArray of todolist items
      */
-    private void getToDos(RoutingContext context) {
+    private void getAllToDo(RoutingContext context) {
         context.response().setStatusCode(HttpResponseStatus.OK.code())
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .end(Json.encode(toDoService.getAll()));
@@ -136,7 +136,7 @@ public class ToDoVerticle extends AbstractVerticle {
     /*
      * Echos Json of the todo item
      */
-    private void getToDoWithId(RoutingContext context) {
+    private void getToDo(RoutingContext context) {
         HttpServerResponse response = context.response();
         String toDoUrl = context.request().absoluteURI();
         Predicate<ToDoItem> condition = item -> item.getUrl().equals(toDoUrl);
@@ -154,7 +154,7 @@ public class ToDoVerticle extends AbstractVerticle {
     /*
      * Clears the todo list
      */
-    private void clearToDo(RoutingContext context) {
+    private void deleteAllToDo(RoutingContext context) {
         toDoService.clearToDos();
         context.response().setStatusCode(HttpResponseStatus.NO_CONTENT.code())
                 .putHeader("content-type", "application/json; charset=utf-8")
@@ -164,7 +164,7 @@ public class ToDoVerticle extends AbstractVerticle {
     /*
      * Deletes todo for the requested url
      */
-    private void deleteToDoWithId(RoutingContext context) {
+    private void deleteToDo(RoutingContext context) {
         String toDoUrl = context.request().absoluteURI();
         Predicate<ToDoItem> condition = toDoItem -> toDoItem.getUrl().equals(toDoUrl);
         if (toDoService.remove(condition)) {
@@ -181,7 +181,7 @@ public class ToDoVerticle extends AbstractVerticle {
     /*
      * Updates to do for the requested url
      */
-    private void updateToDoWithId(RoutingContext context) {
+    private void updateToDo(RoutingContext context) {
         HttpServerRequest req = context.request();
         req.bodyHandler(buffer -> {
             String toDoItemUrl = req.absoluteURI();
